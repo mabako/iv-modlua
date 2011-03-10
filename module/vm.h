@@ -46,6 +46,8 @@ public:
 
 private:
 	static int sqInvoke(lua_State* l);
+	static void sq_pushAny(lua_State* l, int i);
+	static void lua_pushAny(lua_State* l, int sqtop);
 
 	void init();
 };

@@ -99,6 +99,82 @@ bool vm::loadString(const char* string)
 }
 
 /**
+ * push any lua types to squirrel
+ * warning: might be inaccurate for floats & ints
+ */
+void vm::sq_pushAny(lua_State* l, int i)
+{
+	// Guess type based on the lua type
+	switch(lua_type(l, i))
+	{
+		case LUA_TNIL:
+			sq_pushnull(sq);
+			break;
+		case LUA_TBOOLEAN:
+			sq_pushbool(sq, lua_toboolean(l, i));
+			break;
+		case LUA_TNUMBER:
+			{
+				// no different type for integers and floats
+				float f = lua_tonumber(l, i);
+				int i = (int)f;
+				if(abs(f-i) < 0.000001)
+					sq_pushinteger(sq, i);
+				else
+					sq_pushfloat(sq, f);
+			}
+			break;
+		case LUA_TSTRING:
+			sq_pushstring(sq, lua_tostring(l, i), -1);
+			break;
+		default:
+			LogPrintf("[lua:%s] Unknown type %d", lua_tostring(l, 1), lua_type(l, i));
+			break;
+	}
+}
+
+/**
+ * push any squirrel types to lua
+ */
+void vm::lua_pushAny(lua_State* l, int sqtop)
+{
+	switch(sq_gettype(sq, sqtop))
+	{
+		case OT_BOOL:
+			{
+				SQBool b;
+				sq_getbool(sq, sqtop, &b);
+				lua_pushboolean(l, b != 0);
+			}
+			break;
+		case OT_INTEGER:
+			{
+				int i;
+				sq_getinteger(sq, sqtop, &i);
+				lua_pushinteger(l, i);
+			}
+			break;
+		case OT_FLOAT:
+			{
+				float f;
+				sq_getfloat(sq, sqtop, &f);
+				lua_pushnumber(l, f);
+			}
+			break;
+		case OT_STRING:
+			{
+				const char* c;
+				sq_getstring(sq, sqtop, &c);
+				lua_pushstring(l, c);
+			}
+			break;
+		default:
+			lua_pushnil(l);
+			break;
+	}
+}
+
+/**
  * Lua function handler
  */
 int vm::sqInvoke(lua_State* l)
@@ -144,35 +220,8 @@ int vm::sqInvoke(lua_State* l)
 				}
 
 				if(!bFoundType)
-				{
-					// Guess type based on the lua type
-					switch(lua_type(l, i))
-					{
-						case LUA_TNIL:
-							sq_pushnull(sq);
-							break;
-						case LUA_TBOOLEAN:
-							sq_pushbool(sq, lua_toboolean(l, i));
-							break;
-						case LUA_TNUMBER:
-							{
-								// no different type for integers and floats
-								float f = lua_tonumber(l, i);
-								int i = (int)f;
-								if(abs(f-i) < 0.000001)
-									sq_pushinteger(sq, i);
-								else
-									sq_pushfloat(sq, f);
-							}
-							break;
-						case LUA_TSTRING:
-							sq_pushstring(sq, lua_tostring(l, i), -1);
-							break;
-						default:
-							LogPrintf("[lua:%s] Unknown type %d", lua_tostring(l, 1), lua_type(l, i));
-							break;
-					}
-				}
+					// Guess the type to push
+					sq_pushAny(l, i);
 			}
 
 			// Save the stack top
@@ -185,40 +234,7 @@ int vm::sqInvoke(lua_State* l)
 			int iRet = 0;
 			for( ++sqtop; sqtop <= sq_gettop(sq); ++ sqtop)
 			{
-				switch(sq_gettype(sq, sqtop))
-				{
-					case OT_BOOL:
-						{
-							SQBool b;
-							sq_getbool(sq, sqtop, &b);
-							lua_pushboolean(l, b != 0);
-						}
-						break;
-					case OT_INTEGER:
-						{
-							int i;
-							sq_getinteger(sq, sqtop, &i);
-							lua_pushinteger(l, i);
-						}
-						break;
-					case OT_FLOAT:
-						{
-							float f;
-							sq_getfloat(sq, sqtop, &f);
-							lua_pushnumber(l, f);
-						}
-						break;
-					case OT_STRING:
-						{
-							const char* c;
-							sq_getstring(sq, sqtop, &c);
-							lua_pushstring(l, c);
-						}
-						break;
-					default:
-						lua_pushnil(l);
-						break;
-				}
+				lua_pushAny(l, sqtop);
 				++ iRet;
 			}
 			return iRet;
