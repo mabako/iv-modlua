@@ -72,7 +72,14 @@ vm::~vm()
  */
 bool vm::loadScript(const char* name)
 {
-	return LUA_OK == luaL_dofile(l, name);
+	if(LUA_OK == luaL_loadfile(l, name))
+		if(LUA_OK == lua_pcall(l, 0, LUA_MULTRET, 0))
+			return true;
+
+	// Output the lua error
+	LogPrintf("[lua] %s", lua_tostring(l, -1));
+
+	return false;
 }
 
 /**
@@ -81,7 +88,14 @@ bool vm::loadScript(const char* name)
  */
 bool vm::loadString(const char* string)
 {
-	return LUA_OK == luaL_dostring(l, string);
+	if(LUA_OK == luaL_loadstring(l, string))
+		if(LUA_OK == lua_pcall(l, 0, LUA_MULTRET, 0))
+			return true;
+
+	// Output the lua error
+	LogPrintf("[lua] %s", lua_tostring(l, -1));
+
+	return false;
 }
 
 /**
@@ -89,28 +103,25 @@ bool vm::loadString(const char* string)
  */
 int vm::sqInvoke(lua_State* l)
 {
-	LogPrintf("sqInvoke");
 	if(lua_type(l, 1) == LUA_TSTRING)
 	{
 		// Find the function
 		std::map<std::string, scriptfunction>::iterator iter = functions.find(lua_tostring(l, 1));
 		if(iter != functions.end())
 		{
-			LogPrintf("a %s, sq = %p", lua_tostring(l, 1), sq);
-
 			// Reset the squirrel vm
 			sq_settop(sq, 0);
 			sq_pushroottable(sq);
-			LogPrintf("Reset Squirrel VM");
 
 			// push all arguments
 			unsigned int i = 1;
 			while(lua_type(l, ++ i) != LUA_TNONE)
 			{
 				// Check type mask
-				bool bFoundType = true;
+				bool bFoundType = false;
 				if((*iter).second.szFunctionTemplate != 0 && strlen((*iter).second.szFunctionTemplate) > (i-2))
 				{
+					bFoundType = true;
 					switch((*iter).second.szFunctionTemplate[i-2])
 					{
 						case 'b':
@@ -126,7 +137,7 @@ int vm::sqInvoke(lua_State* l)
 							sq_pushinteger(sq, lua_tointeger(l, i));
 							break;
 						default:
-							LogPrintf("[modlua] Unknown typemask '%s' ('%c')", (*iter).second.szFunctionTemplate, (*iter).second.szFunctionTemplate[i-2]);
+							LogPrintf("[lua:%s] Unknown typemask '%s' ('%c')", lua_tostring(l, 1), (*iter).second.szFunctionTemplate, (*iter).second.szFunctionTemplate[i-2]);
 							bFoundType = false;
 							break;
 					}
@@ -158,14 +169,14 @@ int vm::sqInvoke(lua_State* l)
 							sq_pushstring(sq, lua_tostring(l, i), -1);
 							break;
 						default:
-							LogPrintf("Unknown lua type %d", lua_type(l, i));
+							LogPrintf("[lua:%s] Unknown type %d", lua_tostring(l, 1), lua_type(l, i));
+							break;
 					}
 				}
 			}
 
 			// Save the stack top
 			int sqtop = sq_gettop(sq);
-			LogPrintf("Found stack top = %d", sqtop);
 
 			// Call the function
 			(*iter).second.sqFunc(sq);
@@ -174,12 +185,10 @@ int vm::sqInvoke(lua_State* l)
 			int iRet = 0;
 			for( ++sqtop; sqtop <= sq_gettop(sq); ++ sqtop)
 			{
-				LogPrintf("Let's return something %d", iRet+1);
 				switch(sq_gettype(sq, sqtop))
 				{
 					case OT_BOOL:
 						{
-							LogPrintf("OT_BOOL");
 							SQBool b;
 							sq_getbool(sq, sqtop, &b);
 							lua_pushboolean(l, b != 0);
@@ -187,7 +196,6 @@ int vm::sqInvoke(lua_State* l)
 						break;
 					case OT_INTEGER:
 						{
-							LogPrintf("OT_INT");
 							int i;
 							sq_getinteger(sq, sqtop, &i);
 							lua_pushinteger(l, i);
@@ -195,7 +203,6 @@ int vm::sqInvoke(lua_State* l)
 						break;
 					case OT_FLOAT:
 						{
-							LogPrintf("OT_FLOAT");
 							float f;
 							sq_getfloat(sq, sqtop, &f);
 							lua_pushnumber(l, f);
@@ -203,7 +210,6 @@ int vm::sqInvoke(lua_State* l)
 						break;
 					case OT_STRING:
 						{
-							LogPrintf("OT_STRING");
 							const char* c;
 							sq_getstring(sq, sqtop, &c);
 							lua_pushstring(l, c);
@@ -216,6 +222,10 @@ int vm::sqInvoke(lua_State* l)
 				++ iRet;
 			}
 			return iRet;
+		}
+		else
+		{
+			LogPrintf("[lua] Tried to invoke unknown function %s", lua_tostring(l, 1));
 		}
 	}
 	return 0;

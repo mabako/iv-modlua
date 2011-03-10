@@ -30,13 +30,7 @@
 
 #include <vector>
 #include "SDK/SDK.h"
-
-extern "C"
-{
-	#include <lua.h>
-	#include <lualib.h>
-	#include <lauxlib.h>
-}
+#include <lua.hpp>
 
 class vm
 {
