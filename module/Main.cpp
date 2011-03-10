@@ -76,7 +76,10 @@ EXPORT bool InitModule(char * szModuleName)
 
 	LogPrintf("OOO---------------");
 	vm* v = new vm();
-	v->loadString("print(\"Hello World\") local a = kickPlayer(\"asdf\"); print(tostring(a) .. \"=\" .. type(a))");
+	v->loadString("o = createVehicle(3, 1.2, 3.4, 5.6, 7.8, 9.10, 11.12, 0, 0, 0, 0)");
+	v->loadString("log(tostring(o))");
+	v->loadString("log(tostring(getVehicleCoordinates))");
+	v->loadString("for k, v in pairs(getVehicleCoordinates(o)) do print(k .. \":\" .. v) end");
 	delete v;
 	LogPrintf("OOO---------------");
 

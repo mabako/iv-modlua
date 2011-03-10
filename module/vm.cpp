@@ -168,6 +168,27 @@ void vm::lua_pushAny(lua_State* l, int sqtop)
 				lua_pushstring(l, c);
 			}
 			break;
+		case OT_ARRAY:
+		case OT_TABLE:
+			{
+				lua_newtable(l);
+
+				sq_push(sq, sqtop);
+				sq_pushnull(sq);
+
+				while(SQ_SUCCEEDED(sq_next(sq, -2)))
+				{
+					// value = -1, key = -2
+					lua_pushAny(l, -2);
+					lua_pushAny(l, -1);
+					lua_settable(l, -3);
+
+					sq_pop(sq, 2);
+				}
+
+				sq_pop(sq, 2);
+			}
+			break;
 		default:
 			lua_pushnil(l);
 			break;
