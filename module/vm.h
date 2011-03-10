@@ -29,6 +29,7 @@
  */
 
 #include <vector>
+#include "SDK/SDK.h"
 
 extern "C"
 {
@@ -40,6 +41,7 @@ extern "C"
 class vm
 {
 private:
+	static SQVM * sq;
 	lua_State* l;
 public:
 	vm();
@@ -49,5 +51,7 @@ public:
 	bool loadString(const char* string);
 
 private:
+	static int sqInvoke(lua_State* l);
+
 	void init();
 };

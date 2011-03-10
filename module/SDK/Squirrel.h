@@ -501,3 +501,7 @@ typedef void (__cdecl *sq_setdebughook_t)(HSQUIRRELVM v);
 #define sq_free FuncContainer.sqfree
 #define sq_stackinfos FuncContainer.sqstackinfos
 #define sq_setdebughook FuncContainer.sqsetdebughook
+
+// custom
+#define sq_open FuncContainer.sqopen
+#define sq_close FuncContainer.sqclose

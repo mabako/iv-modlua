@@ -28,7 +28,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vector>
+#include <map>
+#include <string>
 #include "SDK/SDK.h"
  
 struct scriptfunction
@@ -39,4 +40,4 @@ struct scriptfunction
 	char * szFunctionTemplate;
 };
 
-extern std::vector<scriptfunction> functions;
+extern std::map<std::string, scriptfunction> functions;

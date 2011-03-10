@@ -28,7 +28,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vector>
+#include <map>
 #include "Main.h"
 #include "SDK/SDK.h"
 #include "vm.h"
@@ -44,7 +44,7 @@ int base = -0x400000;
 /*
  * IV:MP's natives
  */
-std::vector<scriptfunction> functions;
+std::map<std::string, scriptfunction> functions;
 
 /*
  *	This function is called when the module was loaded.
@@ -70,25 +70,13 @@ EXPORT bool InitModule(char * szModuleName)
 		if( func.sqFunc == 0 )
 			break;
 
-		if(!strcmp(func.szFunctionName, "log"))
-		{
-			SQVM* pVM = FuncContainer.sqopen(1024);
-			FuncContainer.sqpushroottable(pVM);
-			FuncContainer.sqpushstring(pVM, "Hello", -1);
-			LogPrintf("TOP: %d", FuncContainer.sqgettop(pVM));
-			func.sqFunc(pVM);
-			LogPrintf("TOP: %d", FuncContainer.sqgettop(pVM)); // = (usually) previous top + 1
-			FuncContainer.sqclose(pVM);
-		}
-
-		functions.push_back(func);
-		//LogPrintf("Function is %s, %s, %x, %d", func.szFunctionName, func.szFunctionTemplate, func.sqFunc, func.iParameterCount);
+		functions.insert(std::pair<char*, scriptfunction>(func.szFunctionName, func));
 	}
 	while( true );
 
 	LogPrintf("OOO---------------");
 	vm* v = new vm();
-	v->loadString("print(\"Hello World\") log(\"asdf\")");
+	v->loadString("print(\"Hello World\") local a = kickPlayer(\"asdf\"); print(tostring(a) .. \"=\" .. type(a))");
 	delete v;
 	LogPrintf("OOO---------------");
 
