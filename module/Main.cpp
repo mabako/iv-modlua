@@ -46,6 +46,18 @@ int base = -0x400000;
  */
 std::map<std::string, scriptfunction> functions;
 
+/**
+ * Script that is initially loaded to... load more scripts
+ */
+#define scriptloader \
+	"local config = getConfig() " \
+	"if config['lua'] then " \
+		"for key, value in pairs(config['lua']) do "\
+			"if loadLuaScript(value) then " \
+				"log('Loaded lua script ' .. value) " \
+			"end " \
+		"end " \
+	"end"
 /*
  *	This function is called when the module was loaded.
  *
@@ -74,14 +86,12 @@ EXPORT bool InitModule(char * szModuleName)
 	}
 	while( true );
 
-	LogPrintf("OOO---------------");
+	// Load the script loader - instead of writing it in C/C++, just use lua which has access to native functions already
+	LogPrintf("-------== lua ==--------");
 	vm* v = new vm();
-	v->loadString("o = createVehicle(3, 1.2, 3.4, 5.6, 7.8, 9.10, 11.12, 0, 0, 0, 0)");
-	v->loadString("log(tostring(o))");
-	v->loadString("log(tostring(getVehicleCoordinates))");
-	v->loadString("for k, v in pairs(getVehicleCoordinates(o)) do print(k .. \":\" .. v) end");
+	v->loadString(scriptloader);
 	delete v;
-	LogPrintf("OOO---------------");
+	LogPrintf("          ---");
 
 	return true;
 }

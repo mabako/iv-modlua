@@ -72,7 +72,9 @@ vm::~vm()
  */
 bool vm::loadScript(const char* name)
 {
-	if(LUA_OK == luaL_loadfile(l, name))
+	std::string n("lua/");
+	n.append(name);
+	if(LUA_OK == luaL_loadfile(l, n.c_str()))
 		if(LUA_OK == lua_pcall(l, 0, LUA_MULTRET, 0))
 			return true;
 
@@ -269,12 +271,34 @@ int vm::sqInvoke(lua_State* l)
 }
 
 /**
+ * Loads a script in a new VM
+ * lua syntax: bool loadLuaScript(name)
+ */
+int vm::loadLuaScript(lua_State* l)
+{
+	if(lua_type(l, 1) == LUA_TSTRING)
+	{
+		vm* v = new vm();
+		bool success = v->loadScript(lua_tostring(l, 1));
+		if(!success)
+			delete v;
+
+		lua_pushboolean(l, success);
+		return 1;
+	}
+
+	lua_pushboolean(l, false);
+	return 1;
+}
+
+/**
  * Initalize squirrel functions
  */
 void vm::init()
 {
 	// register the invoke function
 	lua_register(l, "sqInvoke", &sqInvoke);
+	lua_register(l, "loadLuaScript", &loadLuaScript);
 
 	// redirects for all functions
 	char szRedirect[256] = {0};

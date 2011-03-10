@@ -49,5 +49,7 @@ private:
 	static void sq_pushAny(lua_State* l, int i);
 	static void lua_pushAny(lua_State* l, int sqtop);
 
+	static int loadLuaScript(lua_State* l);
+
 	void init();
 };
