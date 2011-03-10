@@ -11,7 +11,7 @@
  *     * Redistributions in binary form must reproduce the above copyright notice, this
  *       list of conditions and the following disclaimer in the documentation and/or other
  *       materials provided with the distribution.
- *     * Neither the name of the mta-mysql nor the names of its contributors may be used
+ *     * Neither the name of the mta-modlua nor the names of its contributors may be used
  *       to endorse or promote products derived from this software without specific prior
  *       written permission.
  *
@@ -27,8 +27,11 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 #include <vector>
+#include "Main.h"
 #include "SDK/SDK.h"
+#include "vm.h"
 
 #if defined(_WIN32)
   #include <windows.h>
@@ -39,16 +42,8 @@ const char * g_szModuleName = "lua Module";
 int base = -0x400000;
 
 /*
- * IV:MP's native array struct
+ * IV:MP's natives
  */
-struct scriptfunction
-{
-	char * szFunctionName;
-	SQFUNCTION sqFunc;
-	int iParameterCount;
-	char * szFunctionTemplate;
-};
-
 std::vector<scriptfunction> functions;
 
 /*
@@ -87,9 +82,15 @@ EXPORT bool InitModule(char * szModuleName)
 		}
 
 		functions.push_back(func);
-		LogPrintf("Function is %s, %s, %x, %d", func.szFunctionName, func.szFunctionTemplate, func.sqFunc, func.iParameterCount);
+		//LogPrintf("Function is %s, %s, %x, %d", func.szFunctionName, func.szFunctionTemplate, func.sqFunc, func.iParameterCount);
 	}
 	while( true );
+
+	LogPrintf("OOO---------------");
+	vm* v = new vm();
+	v->loadString("print(\"Hello World\") log(\"asdf\")");
+	delete v;
+	LogPrintf("OOO---------------");
 
 	return true;
 }
