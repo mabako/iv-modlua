@@ -31,6 +31,12 @@
 #include <map>
 #include "vm.h"
 #include "Main.h"
+#include "event.h"
+
+/**
+ * VM list
+ */
+std::list<vm*> vm::vms;
 
 /**
  * Squirrel VM
@@ -46,6 +52,9 @@ vm::vm()
 	// TODO: kill this some time.
 	if(!sq)
 		sq = sq_open(1024);
+
+	// add it to our list of VMs
+	vms.push_back(this);
 
 	// create the state
 	l = luaL_newstate();
@@ -64,6 +73,20 @@ vm::~vm()
 {
 	lua_close(l);
 	l = 0;
+
+	// Remove it from our list of VMs
+	vms.remove(this);
+}
+
+/**
+ * Finds the VM for that lua state
+ */
+vm* vm::getVM(lua_State* l)
+{
+	for(std::list< vm* >::const_iterator iter = vms.begin(); iter != vms.end(); ++ iter)
+		if((*iter)->getState() == l)
+			return *iter;
+	return 0;
 }
 
 /**
@@ -198,6 +221,14 @@ void vm::lua_pushAny(lua_State* l, int sqtop)
 }
 
 /**
+ * Gets the lua state
+ */
+lua_State* vm::getState()
+{
+	return l;
+}
+
+/**
  * Lua function handler
  */
 int vm::sqInvoke(lua_State* l)
@@ -292,6 +323,91 @@ int vm::loadLuaScript(lua_State* l)
 }
 
 /**
+ * Adds an event
+ * lua syntax: bool addEvent(name, function)
+ */
+int vm::addEvent(lua_State* l)
+{
+	if(lua_type(l, 1) == LUA_TSTRING && lua_type(l, 2) == LUA_TFUNCTION)
+	{
+		vm* vm = getVM(l);
+		if(vm)
+		{
+			const char* szEvent = lua_tostring(l, 1);
+			lua_CFunction pFunction = lua_tocfunction(l, 2);
+
+			// check if event exists with the same handler
+			for(std::list< event* >::const_iterator iter = vm->events.begin(); iter != vm->events.end(); ++ iter)
+			{
+				if((*iter)->pFunction == pFunction && !strcmp((*iter)->szEventName, szEvent))
+				{
+					lua_pushboolean(l, false);
+					return 1;
+				}
+			}
+			
+			vm->events.push_back(new event(szEvent, vm, pFunction));
+			lua_pushboolean(l, true);
+			return 1;
+		}
+	}
+
+	lua_pushboolean(l, false);
+	return 1;
+}
+
+/**
+ * Calls an event
+ * lua syntax: retval callEvent(name, [default return = 1, [...])
+ */
+int vm::callEvent(lua_State *l)
+{
+	lua_pushboolean(l, false);
+	return 1;
+}
+
+/**
+ * Removes an event
+ * lua syntax: bool removeEvent(name, [function])
+ */
+int vm::removeEvent(lua_State* l)
+{
+	if(lua_type(l, 1) == LUA_TSTRING)
+	{
+		const char* szEvent = lua_tostring(l, 1);
+		if(lua_type(l, 2) == LUA_TFUNCTION || lua_type(l, 2) == LUA_TNONE)
+		{
+			bool found = false;
+
+			// find the VM
+			vm* vm = getVM(l);
+			if(vm)
+			{
+				for(std::list< event* >::iterator iter = vm->events.begin(); iter != vm->events.end(); )
+				{
+					if(!strcmp((*iter)->szEventName, szEvent))
+					{
+						if(lua_type(l, 2) == LUA_TNONE || (*iter)->pFunction == lua_tocfunction(l, 2))
+						{
+							vm->events.erase(iter++);
+							found = true;
+						}
+						else
+							iter++;
+					}
+				}
+			}
+
+			lua_pushboolean(l, found);
+			return 1;
+		}
+	}
+
+	lua_pushboolean(l, false);
+	return 1;
+}
+
+/**
  * Initalize squirrel functions
  */
 void vm::init()
@@ -299,6 +415,9 @@ void vm::init()
 	// register the invoke function
 	lua_register(l, "sqInvoke", &sqInvoke);
 	lua_register(l, "loadLuaScript", &loadLuaScript);
+	lua_register(l, "addEvent", &addEvent);
+	lua_register(l, "callEvent", &callEvent);
+	lua_register(l, "removeEvent", &removeEvent);
 
 	// redirects for all functions
 	char szRedirect[256] = {0};

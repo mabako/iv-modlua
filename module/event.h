@@ -30,43 +30,22 @@
 
 #pragma once
 
-#include <list>
-#include <vector>
-#include "SDK/SDK.h"
+#include "SDK\SDK.h"
+#include "vm.h"
 #include <lua.hpp>
 
-class event;
-
-class vm
+class event
 {
-	friend class event;
+	friend class vm;
 
 private:
-	static std::list<vm*> vms;
-	static SQVM * sq;
-
-	std::list<event*> events;
-	lua_State* l;
+	vm* p;
+	lua_CFunction pFunction;
+	char* szEventName;
 public:
-	vm();
-	~vm();
+	event(const char* szEventName, vm* v, lua_CFunction pFunction);
+	~event();
 
-	static vm* getVM(lua_State* l);
-
-	bool loadScript(const char* name);
-	bool loadString(const char* string);
-
-private:
-	lua_State* getState();
-	static int sqInvoke(lua_State* l);
-	static void sq_pushAny(lua_State* l, int i);
-	static void lua_pushAny(lua_State* l, int sqtop);
-
-	static int loadLuaScript(lua_State* l);
-
-	static int addEvent(lua_State* l);
-	static int callEvent(lua_State* l);
-	static int removeEvent(lua_State* l);
-
-	void init();
+	static void staticHandler(SquirrelArgumentsInterface* pArguments, SquirrelArgumentInterface* pReturn, void* pThis);
+	void handler(SquirrelArgumentsInterface* pArguments, SquirrelArgumentInterface* pReturn);
 };

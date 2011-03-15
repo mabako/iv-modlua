@@ -28,45 +28,46 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "event.h"
 
-#include <list>
-#include <vector>
-#include "SDK/SDK.h"
-#include <lua.hpp>
-
-class event;
-
-class vm
+/**
+ * Event constructor - registers itself as an event
+ */
+event::event(const char* szEventName, vm* v, lua_CFunction pFunction)
 {
-	friend class event;
+	// Copy all relevant data
+	this->p = v;
+	this->pFunction = pFunction;
+		
+	this->szEventName = new char[strlen(szEventName)+1];
+	strcpy(this->szEventName, szEventName);
+	this->szEventName[strlen(szEventName)] = 0;
 
-private:
-	static std::list<vm*> vms;
-	static SQVM * sq;
+	// Register the event
+	InterfaceContainer.g_pEvents->AddModuleEvent(this->szEventName, staticHandler, (void*)this);
+}
 
-	std::list<event*> events;
-	lua_State* l;
-public:
-	vm();
-	~vm();
+/**
+ * Removes itself from the events list
+ */
+event::~event()
+{
+	LogPrintf("Destructor Call");
 
-	static vm* getVM(lua_State* l);
+	// Remove the event
+	InterfaceContainer.g_pEvents->RemoveModuleEvent(szEventName, staticHandler, (void*)this);
 
-	bool loadScript(const char* name);
-	bool loadString(const char* string);
+	// free the space for the events name
+	delete szEventName;
+}
 
-private:
-	lua_State* getState();
-	static int sqInvoke(lua_State* l);
-	static void sq_pushAny(lua_State* l, int i);
-	static void lua_pushAny(lua_State* l, int sqtop);
+void event::staticHandler(SquirrelArgumentsInterface* pArguments, SquirrelArgumentInterface* pReturn, void* pChunk)
+{
+	// Call the dynamic handler
+	event* e = reinterpret_cast<event*>(pChunk);
+	e->handler(pArguments, pReturn);
+}
 
-	static int loadLuaScript(lua_State* l);
-
-	static int addEvent(lua_State* l);
-	static int callEvent(lua_State* l);
-	static int removeEvent(lua_State* l);
-
-	void init();
-};
+void event::handler(SquirrelArgumentsInterface* pArguments, SquirrelArgumentInterface* pReturn)
+{
+}

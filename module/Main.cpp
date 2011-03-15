@@ -58,6 +58,7 @@ std::map<std::string, scriptfunction> functions;
 			"end " \
 		"end " \
 	"end"
+
 /*
  *	This function is called when the module was loaded.
  *
@@ -65,6 +66,8 @@ std::map<std::string, scriptfunction> functions;
  *		true: Show a message confirming the module was loaded
  *		false: Don't show a message confirming the module was loaded
  */
+const char* szReplacedFunctions[] = {"addEvent", "callEvent", "removeEvent"};
+
 EXPORT bool InitModule(char * szModuleName)
 {
 	strcpy(szModuleName, g_szModuleName);
@@ -81,6 +84,10 @@ EXPORT bool InitModule(char * szModuleName)
 		scriptfuncaddr += sizeof(scriptfunction);
 		if( func.sqFunc == 0 )
 			break;
+
+		for(int i = 0; i < sizeof(szReplacedFunctions); ++ i)
+			if(!strcmp(func.szFunctionName, szReplacedFunctions[i]))
+				continue;
 
 		functions.insert(std::pair<char*, scriptfunction>(func.szFunctionName, func));
 	}
@@ -107,22 +114,9 @@ EXPORT void ScriptUnload(HSQUIRRELVM pVM)
 }
 
 /*
- *	This function is called for internal server callbacks.
- *	Usage reserved.
- *
- *	Return
- *		true: Callback was handled.
- *		false: Callback was not handled.
- */
-EXPORT bool HandleCallback(eModuleCallback Callback, void *pArgs)
-{
-	return false;
-}
-
-/*
  *	This function is called every server pulse.
  *	It is not recommended to run CPU-intensive code here.
  */
 EXPORT void Pulse()
-{	
+{
 }

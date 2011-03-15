@@ -1,29 +1,29 @@
 //============== Copyright © 2010 IV:MP Team. All rights reserved. ==============
-// File: SDK.h
+// File: Definitions.h
 //===============================================================================
 
 #pragma once
 
 #include <string.h>
 #include "Squirrel.h"
+#include "Interfaces/InterfaceCommon.h"
 
-#if defined _WIN32 || defined __CYGWIN__
-  #ifdef __GNUC__
-    #define EXPORT extern "C" __attribute__((dllexport))
-  #else
-    #define EXPORT extern "C" __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
-  #endif
+#ifndef _LINUX
+#define EXPORT extern "C" __declspec(dllexport)
 #else
-  #if __GNUC__ >= 4
-    #define EXPORT extern "C" __attribute__((visibility("default")))
-  #else
-    #define EXPORT
-  #endif
+#define EXPORT extern "C"
 #endif
 
-enum eModuleCallback
-{
-};
+#define MAX_VEHICLES 0xFFFE
+#define MAX_OBJECTS 0xFFFE
+#define MAX_CHECKPOINTS 0xFFFE
+#define MAX_BLIPS 1300
+#define MAX_ACTORS 100
+#define MAX_PICKUPS 0xFFFE
+#define MAX_NAME 32
+
+// Define used for invalid entity ids
+#define INVALID_ENTITY_ID 0xFFFF
 
 typedef void (* LogPrintf_t)(const char * szFormat, ...);
 #define LogPrintf FuncContainer.myLogPrintf
@@ -153,4 +153,26 @@ struct FuncContainer_t
 	LogPrintf_t myLogPrintf;
 };
 
+struct InterfaceContainer_t
+{
+	CNetworkManagerInterface* g_pNetworkManager;
+	CPlayerManagerInterface* g_pPlayerManager;
+	CVehicleManagerInterface* g_pVehicleManager;
+	CObjectManagerInterface* g_pObjectManager;
+	CBlipManagerInterface* g_pBlipManager;
+	CActorManagerInterface* g_pActorManager;
+	CPickupManagerInterface* g_pPickupManager;
+	CCheckpointManagerInterface* g_pCheckpointManager;
+	void* g_pModelManager;
+	void* g_pScriptingManager;
+	CModuleManagerInterface* g_pModuleManager;
+	void* g_pRakServer;
+	void* g_pConfig;
+	CTimeInterface* g_pTime;
+	CTrafficLightsInterface* g_pTrafficLights;
+	CEventsInterface* g_pEvents;
+	SquirrelArgumentManager* pSquirrelArgumentManager;
+};
+
 extern FuncContainer_t FuncContainer;
+extern InterfaceContainer_t InterfaceContainer;

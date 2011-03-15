@@ -5,10 +5,16 @@
 #include "SDK.h"
 
 FuncContainer_t FuncContainer;
+InterfaceContainer_t InterfaceContainer;
 
 EXPORT void SetupFunctions(FuncContainer_t * pContainer)
 {
 	FuncContainer = *pContainer;
+}
+
+EXPORT void SetupInterfaces(InterfaceContainer_t * pContainer)
+{
+	InterfaceContainer = *pContainer;
 }
 
 void RegisterFunction(HSQUIRRELVM pVM, const char * szName, SQFUNCTION pfnFunction)
