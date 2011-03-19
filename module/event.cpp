@@ -64,6 +64,7 @@ bool event::setActive(bool newActive)
 	if(newActive == active)
 		return false;
 
+	active = newActive;
 	if(!newActive)
 	{
 		// Remove the event
