@@ -480,7 +480,14 @@ int vm::addEvent(lua_State* l)
 			{
 				if((*iter)->iFunction == iFunction && !strcmp((*iter)->szEventName, szEvent))
 				{
-					lua_pushboolean(l, false);
+					if((*iter)->active == true)
+						lua_pushboolean(l, false);
+					else
+					{
+						(*iter)->setActive(true);
+						vm->events.push_back(*iter);
+						lua_pushboolean(l, true);
+					}
 					return 1;
 				}
 			}
@@ -555,9 +562,12 @@ int vm::removeEvent(lua_State* l)
 					{
 						if(lua_type(l, 2) == LUA_TNONE || (*iter)->iFunction == luaToRef(l, 2))
 						{
-							(*iter)->remove();
-							vm->events.erase(iter++);
-							found = true;
+							if((*iter)->active == true)
+							{
+								(*iter)->setActive(false);
+								vm->events.erase(iter++);
+								found = true;
+							}
 						}
 						else
 							iter++;

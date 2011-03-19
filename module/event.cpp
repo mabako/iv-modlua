@@ -35,7 +35,7 @@
  */
 event::event(const char* szEventName, vm* v, int iFunction)
 {
-	active = true;
+	active = false;
 
 	// Copy all relevant data
 	this->p = v;
@@ -45,13 +45,12 @@ event::event(const char* szEventName, vm* v, int iFunction)
 	strcpy(this->szEventName, szEventName);
 	this->szEventName[strlen(szEventName)] = 0;
 
-	// Register the event
-	InterfaceContainer.g_pEvents->AddModuleEvent(this->szEventName, staticHandler, (void*)this);
+	setActive(true);
 }
 
 event::~event( )
 {
-	remove( );
+	setActive(false);
 
 	// free the space for the events name
 	delete szEventName;
@@ -60,16 +59,21 @@ event::~event( )
 /**
  * Removes itself from the events list
  */
-bool event::remove()
+bool event::setActive(bool newActive)
 {
-	if(active)
-	{
-		active = false;
+	if(newActive == active)
+		return false;
 
+	if(!newActive)
+	{
 		// Remove the event
 		return InterfaceContainer.g_pEvents->RemoveModuleEvent(szEventName, staticHandler, (void*)this);
 	}
-	return false;
+	else
+	{
+		// Register the event
+		return InterfaceContainer.g_pEvents->AddModuleEvent(this->szEventName, staticHandler, (void*)this);
+	}
 }
 
 void event::staticHandler(SquirrelArgumentsInterface* pArguments, SquirrelArgumentInterface* pReturn, void* pChunk)

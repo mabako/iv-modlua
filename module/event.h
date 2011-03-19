@@ -47,7 +47,7 @@ public:
 	event(const char* szEventName, vm* v, int iFunction);
 	~event();
 
-	bool remove( );
+	bool setActive(bool newActive);
 
 	static void staticHandler(SquirrelArgumentsInterface* pArguments, SquirrelArgumentInterface* pReturn, void* pThis);
 	void handler(SquirrelArgumentsInterface* pArguments, SquirrelArgumentInterface* pReturn);
