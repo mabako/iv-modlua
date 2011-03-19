@@ -59,8 +59,11 @@ public:
 private:
 	lua_State* getState();
 	static int sqInvoke(lua_State* l);
-	static void sq_pushAny(lua_State* l, int i);
-	static void lua_pushAny(lua_State* l, int sqtop);
+	static void luaToSquirrel(lua_State* l, int i);
+	static void squirrelToLua(lua_State* l, int sqtop);
+	static void luaToArgument(lua_State* l, int i, SquirrelArgumentInterface* pArgument, bool changeIfNil = true);
+	static void argumentToLua(lua_State* l, SquirrelArgumentInterface* pArgument);
+	static int luaToRef(lua_State* l, int i);
 
 	static int loadLuaScript(lua_State* l);
 

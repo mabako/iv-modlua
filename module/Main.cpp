@@ -50,6 +50,7 @@ std::map<std::string, scriptfunction> functions;
  * Script that is initially loaded to... load more scripts
  */
 #define scriptloader \
+	"log(\"-------== lua ==--------\") " \
 	"local config = getConfig() " \
 	"if config['lua'] then " \
 		"for key, value in pairs(config['lua']) do "\
@@ -57,7 +58,8 @@ std::map<std::string, scriptfunction> functions;
 				"log('Loaded lua script ' .. value) " \
 			"end " \
 		"end " \
-	"end"
+	"end " \
+	"log(\"          ---\") "
 
 /*
  *	This function is called when the module was loaded.
@@ -66,8 +68,6 @@ std::map<std::string, scriptfunction> functions;
  *		true: Show a message confirming the module was loaded
  *		false: Don't show a message confirming the module was loaded
  */
-const char* szReplacedFunctions[] = {"addEvent", "callEvent", "removeEvent"};
-
 EXPORT bool InitModule(char * szModuleName)
 {
 	strcpy(szModuleName, g_szModuleName);
@@ -76,8 +76,8 @@ EXPORT bool InitModule(char * szModuleName)
 	// let's dig into the script function pool
 	base += (int)GetModuleHandle(0);
 	
-	// Only works on Windows 0.1 T1 R2 server
-	int scriptfuncaddr = (base + 0x526A40);
+	// Only works on Windows 0.1 T2 R2 server
+	int scriptfuncaddr = (base + 0x514958);
 	do
 	{
 		scriptfunction func = *(scriptfunction*)scriptfuncaddr;
@@ -85,32 +85,17 @@ EXPORT bool InitModule(char * szModuleName)
 		if( func.sqFunc == 0 )
 			break;
 
-		for(int i = 0; i < sizeof(szReplacedFunctions); ++ i)
-			if(!strcmp(func.szFunctionName, szReplacedFunctions[i]))
-				continue;
-
-		functions.insert(std::pair<char*, scriptfunction>(func.szFunctionName, func));
+		if(strcmp(func.szFunctionName, "addEvent") && strcmp(func.szFunctionName, "callEvent") && strcmp(func.szFunctionName, "removeEvent"))
+			functions.insert(std::pair<char*, scriptfunction>(func.szFunctionName, func));
 	}
 	while( true );
 
 	// Load the script loader - instead of writing it in C/C++, just use lua which has access to native functions already
-	LogPrintf("-------== lua ==--------");
 	vm* v = new vm();
 	v->loadString(scriptloader);
 	delete v;
-	LogPrintf("          ---");
 
 	return true;
-}
-
-/* This function is called when a script is loaded. */
-EXPORT void ScriptLoad(HSQUIRRELVM pVM)
-{
-}
-
-/* This function is called when a script is unloaded. */
-EXPORT void ScriptUnload(HSQUIRRELVM pVM)
-{
 }
 
 /*

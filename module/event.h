@@ -40,11 +40,14 @@ class event
 
 private:
 	vm* p;
-	lua_CFunction pFunction;
+	int iFunction;
 	char* szEventName;
+	bool active;
 public:
-	event(const char* szEventName, vm* v, lua_CFunction pFunction);
+	event(const char* szEventName, vm* v, int iFunction);
 	~event();
+
+	bool remove( );
 
 	static void staticHandler(SquirrelArgumentsInterface* pArguments, SquirrelArgumentInterface* pReturn, void* pThis);
 	void handler(SquirrelArgumentsInterface* pArguments, SquirrelArgumentInterface* pReturn);

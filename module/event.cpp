@@ -33,11 +33,13 @@
 /**
  * Event constructor - registers itself as an event
  */
-event::event(const char* szEventName, vm* v, lua_CFunction pFunction)
+event::event(const char* szEventName, vm* v, int iFunction)
 {
+	active = true;
+
 	// Copy all relevant data
 	this->p = v;
-	this->pFunction = pFunction;
+	this->iFunction = iFunction;
 		
 	this->szEventName = new char[strlen(szEventName)+1];
 	strcpy(this->szEventName, szEventName);
@@ -47,18 +49,27 @@ event::event(const char* szEventName, vm* v, lua_CFunction pFunction)
 	InterfaceContainer.g_pEvents->AddModuleEvent(this->szEventName, staticHandler, (void*)this);
 }
 
-/**
- * Removes itself from the events list
- */
-event::~event()
+event::~event( )
 {
-	LogPrintf("Destructor Call");
-
-	// Remove the event
-	InterfaceContainer.g_pEvents->RemoveModuleEvent(szEventName, staticHandler, (void*)this);
+	remove( );
 
 	// free the space for the events name
 	delete szEventName;
+}
+
+/**
+ * Removes itself from the events list
+ */
+bool event::remove()
+{
+	if(active)
+	{
+		active = false;
+
+		// Remove the event
+		return InterfaceContainer.g_pEvents->RemoveModuleEvent(szEventName, staticHandler, (void*)this);
+	}
+	return false;
 }
 
 void event::staticHandler(SquirrelArgumentsInterface* pArguments, SquirrelArgumentInterface* pReturn, void* pChunk)
@@ -70,4 +81,29 @@ void event::staticHandler(SquirrelArgumentsInterface* pArguments, SquirrelArgume
 
 void event::handler(SquirrelArgumentsInterface* pArguments, SquirrelArgumentInterface* pReturn)
 {
+	if(!active)
+		return;
+
+	// Get our state
+	lua_State* l = p->getState( );
+
+	// Push the function, then all arguments
+	lua_rawgeti(l, LUA_REGISTRYINDEX, iFunction);
+	for(unsigned int i = 0; i < pArguments->GetSize( ); ++ i)
+		vm::argumentToLua(l, pArguments->Get( i ));
+
+	// Call the function
+	if(0 == lua_pcall(l, pArguments->GetSize(), 1, 0))
+	{
+		// Succeeded, so get the return value (if any)
+		vm::luaToArgument(l, -1, pReturn, false);
+	}
+	else
+	{
+		// Print the error
+		LogPrintf("[lua] %s", lua_tostring(l, -1));
+	}
+
+	// Pop the number of return values (third param in pcall)
+	lua_pop(l, 1);
 }
