@@ -90,11 +90,6 @@ EXPORT bool InitModule(char * szModuleName)
 	}
 	while( true );
 
-	// Load the script loader - instead of writing it in C/C++, just use lua which has access to native functions already
-	vm* v = new vm();
-	v->loadString(scriptloader);
-	delete v;
-
 	return true;
 }
 
@@ -104,4 +99,33 @@ EXPORT bool InitModule(char * szModuleName)
  */
 EXPORT void Pulse()
 {
+}
+
+/* This function is called when a script is loaded. */
+EXPORT void ScriptLoad(HSQUIRRELVM pVM)
+{
+	static bool bInitalizedScripts = false;
+	if(!bInitalizedScripts)
+	{
+		// Load the script loader - instead of writing it in C/C++, just use lua which has access to native functions already
+		vm* v = new vm();
+		v->loadString(scriptloader);
+		delete v;
+
+		bInitalizedScripts = true;
+	}
+}
+
+/**
+ * SDK function
+ */
+EXPORT void RegisterSquirrelFunction(const char* szName, SQFUNCTION pFunction)
+{
+	scriptfunction f;
+	f.iParameterCount = -1;
+	f.szFunctionTemplate = 0;
+	f.sqFunc = pFunction;
+	f.szFunctionName = new char[strlen(szName)+1];
+	strcpy(f.szFunctionName, szName);
+	functions.insert(std::pair<char*, scriptfunction>(f.szFunctionName, f));
 }
